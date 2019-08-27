@@ -128,19 +128,21 @@ module.exports = function(app, db) {
 
     app.post('/enrollCourse', (req, res) => {
         const { courseId, stuId } = req.query;
-        let findQuery = {}
-        let selQuery = {}
+        let query4FindCourse = {}
+        let query4FindStudent = {}
+        let query4Upt = {}
         let errMsg = []
 
         if (!isEmptyString(courseId)) {
-            selQuery._id = new ObjectID(courseId)
-            findQuery.courseId = {$ne: courseId}
+            query4Upt._id = new ObjectID(courseId)
+            query4FindCourse._id = new ObjectID(courseId)
         }  else {
             errMsg.push('Invalid course ID');
         }
     
         if (!isEmptyString(stuId)) {
-            findQuery._id = new ObjectID(stuId)
+            query4FindStudent._id = new ObjectID(stuId)
+            query4Upt.enrolled = {$ne: stuId}
         } else {
             errMsg.push('Invalid student ID');
         }
@@ -148,21 +150,29 @@ module.exports = function(app, db) {
         if (!isEmptyObj(errMsg))
             return handleErrorRes(res, errMsg)
 
-        db.collection('student').findOne(findQuery, (err, result) => {
+        db.collection('student').findOne(query4FindStudent, (err, student) => {
             if (err) {
                 return handleErrorRes(res, [err])
             } 
 
-            if (!isEmptyObj(result)) {
+            if (!isEmptyObj(student)) {
                 let enrolled = {}
                 enrolled.stuId = stuId
-                enrolled.stuName = result.stuName
+                enrolled.stuName = student.stuName
                 enrolled.enrolledDate = new Date()
-                return db.collection('course').updateOne(selQuery, {$push: {enrolled} }, (err, result) => {
+                return db.collection('course').updateOne(query4Upt, {$push: {enrolled} }, (err) => {
                     if (err) {
                         return handleErrorRes(res, [err])
                     }
-                    res.json({status: true})
+                    return db.collection('course').findOne(query4FindCourse, (err, course)  => {
+                        if (err) {
+                            return handleErrorRes(res, [err])
+                        }
+                        res.json({
+                            status: true,
+                            result: course,
+                        });
+                    });
                 });
             } else {
                 return handleErrorRes(res, ['Enroll operation failed.'])
@@ -179,21 +189,23 @@ module.exports = function(app, db) {
         })
     })
 
-    app.post('/unEnrollCourse', (req, res) => {
+    app.post('/unenrollCourse', (req, res) => {
         const { courseId, stuId } = req.query;
-        let findQuery = {}
-        let selQuery = {}
+        let query4FindCourse = {}
+        let query4FindStudent = {}
+        let query4Upt = {}
         let errMsg = []
 
         if (!isEmptyString(courseId)) {
-            selQuery._id = new ObjectID(courseId)
-            findQuery.courseId = courseId
+            query4Upt._id = new ObjectID(courseId)
+            query4FindCourse._id = new ObjectID(courseId)
         }  else {
             errMsg.push('Invalid course ID');
         }
     
         if (!isEmptyString(stuId)) {
-            findQuery._id = new ObjectID(stuId)
+            query4FindStudent._id = new ObjectID(stuId)
+            query4Upt.enrolled = {$ne: stuId}
         } else {
             errMsg.push('Invalid student ID');
         }
@@ -201,21 +213,29 @@ module.exports = function(app, db) {
         if (!isEmptyObj(errMsg))
             return handleErrorRes(res, errMsg)
 
-        db.collection('student').findOne(findQuery, (err, result) => {
+        db.collection('student').findOne(query4FindStudent, (err, student) => {
             if (err) {
                 return handleErrorRes(res, [err])
-            }
-            if (!isEmptyObj(result)) {
-                return db.collection('course').updateOne(selQuery, {$pull: {enrolled : {stuId: stuId}} }, (err, result) => {
+            } 
+            if (!isEmptyObj(student)) {
+                return db.collection('course').updateOne(query4Upt, {$pull: {enrolled: {stuId}}}, (err) => {
                     if (err) {
                         return handleErrorRes(res, [err])
                     }
-                    res.json({status: true})
+                    return db.collection('course').findOne(query4FindCourse, (err, course)  => {
+                        if (err) {
+                            return handleErrorRes(res, [err])
+                        }
+                        res.json({
+                            status: true,
+                            result: course,
+                        });
+                    });
                 });
             } else {
-                return handleErrorRes(res, ['UnEnroll operation failed.'])
+                return handleErrorRes(res, ['Enroll operation failed.'])
             }
-        })           
+        })         
     });
 
     app.get('/getStudent', (req, res) => {
