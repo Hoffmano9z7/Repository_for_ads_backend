@@ -140,7 +140,7 @@ module.exports = function(app, db) {
 
         console.log(query)
 
-        db.collection('course').find(query).toArray((err, result)  => {
+        db.collection('course').find(query).toArray((err, course)  => {
             if (err) {
                 return handleErrorRes(res, [err])
             } 
