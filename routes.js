@@ -205,15 +205,12 @@ module.exports = function(app, db) {
                             if (err) {
                                 return handleErrorRes(res, [err])
                             }
-                            const result = course.map( data => {
-                                data['department'] = data.deptId.map( id => {
-                                    return dept.find(elem => elem._id == id)
-                                })
-                                return data;
+                            course['department'] = course.deptId.map( id => {
+                                return dept.find(elem => elem._id == id)
                             })
                             res.json({
                                 status: true,
-                                result: result,
+                                result: course,
                             });
                         })
                     });
@@ -274,15 +271,12 @@ module.exports = function(app, db) {
                             if (err) {
                                 return handleErrorRes(res, [err])
                             }
-                            const result = course.map( data => {
-                                data['department'] = data.deptId.map( id => {
-                                    return dept.find(elem => elem._id == id)
-                                })
-                                return data;
+                            course['department'] = course.deptId.map( id => {
+                                return dept.find(elem => elem._id == id)
                             })
                             res.json({
                                 status: true,
-                                result: result,
+                                result: course,
                             });
                         })
                     });
