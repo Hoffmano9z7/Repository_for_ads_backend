@@ -201,10 +201,21 @@ module.exports = function(app, db) {
                         if (err) {
                             return handleErrorRes(res, [err])
                         }
-                        res.json({
-                            status: true,
-                            result: course,
-                        });
+                        db.collection('department').find({}).toArray( (err, dept) => {
+                            if (err) {
+                                return handleErrorRes(res, [err])
+                            }
+                            const result = course.map( data => {
+                                data['department'] = data.deptId.map( id => {
+                                    return dept.find(elem => elem._id == id)
+                                })
+                                return data;
+                            })
+                            res.json({
+                                status: true,
+                                result: course,
+                            });
+                        })
                     });
                 });
             } else {
@@ -259,10 +270,21 @@ module.exports = function(app, db) {
                         if (err) {
                             return handleErrorRes(res, [err])
                         }
-                        res.json({
-                            status: true,
-                            result: course,
-                        });
+                        db.collection('department').find({}).toArray( (err, dept) => {
+                            if (err) {
+                                return handleErrorRes(res, [err])
+                            }
+                            const result = course.map( data => {
+                                data['department'] = data.deptId.map( id => {
+                                    return dept.find(elem => elem._id == id)
+                                })
+                                return data;
+                            })
+                            res.json({
+                                status: true,
+                                result: course,
+                            });
+                        })
                     });
                 });
             } else {
