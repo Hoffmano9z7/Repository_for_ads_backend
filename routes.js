@@ -29,14 +29,25 @@ module.exports = function(app, db) {
         if (util.isDigit(year))
             query.year = Number(year)
 
-        if (!isEmptyString(deptId))
-            query.deptId = deptId
-
-        db.collection('course').find(query).toArray((err, result)  => {
+        if (!isEmptyObj(deptId))
+            query.deptId = {$in : deptId}
+        
+        db.collection('course').find(query).toArray((err, course) => {
             if (err) {
                 return handleErrorRes(res, [err])
             } 
-            res.json(result);
+            db.collection('department').find({}).toArray( (err, dept) => {
+                if (err) {
+                    return handleErrorRes(res, [err])
+                }
+                const result = course.map( data => {
+                    data['department'] = data.deptId.map( id => {
+                        return dept.find(elem => elem._id == id)
+                    })
+                    return data;
+                })
+                res.json(result)
+            })
         });
     });
 
@@ -45,10 +56,10 @@ module.exports = function(app, db) {
         let query = {}
 
         if (util.isDigit(year))
-        query.year = Number(year)
+            query.year = Number(year)
 
-        if (!isEmptyString(deptId))
-        query.deptId = deptId
+        if (!isEmptyObj(deptId))
+            query.deptId = {$in : deptId}
 
         db.collection('course').aggregate([
             {
@@ -68,11 +79,22 @@ module.exports = function(app, db) {
             {
                 $sort: {"enrolled_count": -1}
             }
-        ]).toArray( (err, result) => {
+        ]).toArray( (err, course) => {
             if (err) {
                 return handleErrorRes(res, [err])
             }
-            res.send(result);
+            db.collection('department').find({}).toArray( (err, dept) => {
+                if (err) {
+                    return handleErrorRes(res, [err])
+                }
+                const result = course.map( data => {
+                    data['department'] = data.deptId.map( id => {
+                        return dept.find(elem => elem._id == id)
+                    })
+                    return data;
+                })
+                res.json(result)
+            })
         })
     });
 
@@ -199,7 +221,7 @@ module.exports = function(app, db) {
         if (!isEmptyString(courseId)) {
             query4Upt._id = new ObjectID(courseId)
             query4FindCourse._id = new ObjectID(courseId)
-        }  else {
+        } else {
             errMsg.push('Invalid course ID');
         }
     
@@ -275,13 +297,266 @@ module.exports = function(app, db) {
             return dataList;
         }
         getDummyData().then( data => {
-            console.log(data)
             db.collection('student').insertMany(data, (err, result) => {
                 if (err) {
                     return handleErrorRes(res, [err])
                 }
                 res.json({status: true})
             })
+        })
+    });
+
+    app.post('/addStudent', (req, res) => {
+        let query = {}
+        const { stuName, dob } = req.query;
+        let errMsg = []
+        
+        if (!isEmptyString(stuName)) 
+            query.stuName = stuName
+        else 
+            errMsg.push('Invalid Student Name');
+
+        if (!isEmptyString(dob))
+            query.dob = new Date(dob)
+        else 
+            errMsg.push('Invalid Date of Birth');
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        query.course = []
+
+        db.collection('student').insertOne(query, (err, result) => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true, id: result.insertedId})
+        })
+    });
+
+    app.post('/delStudent', (req, res) => {
+        let query = {}
+        const { id } = req.query;
+        let errMsg = []
+        
+        if (!isEmptyString(id)) 
+            query._id = new ObjectID(id)
+        else 
+            errMsg.push('Invalid Student');
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        db.collection('student').deleteOne(query, err => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true});
+        })
+    });
+
+    app.post('/updateStudent', (req, res) => {
+        let selQuery = {}
+        let updateQuery = {}
+        const { id, stuName, dob } = req.query;
+        let errMsg = []
+        
+        if (!isEmptyString(id)) 
+            selQuery._id = new ObjectID(id)
+        else 
+            errMsg.push('Update failed due to invalid ID');
+        
+        if (!isEmptyString(stuName)) 
+            updateQuery.stuName = stuName
+
+        if (!isEmptyString(dob)) 
+            updateQuery.dob = new Date(dob)
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        db.collection('student').updateOne(selQuery, {$set:updateQuery}, err => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true});
+        })
+    });
+
+    app.post('/addDept', (req, res) => {
+        let query = {}
+        const { deptName, location } = req.query;
+        let errMsg = []
+        
+        if (!isEmptyString(deptName)) 
+            query.deptName = deptName
+        else 
+            errMsg.push('Invalid Department Name');
+
+        if (!isEmptyString(location))
+            query.location = location
+        else 
+            errMsg.push('Invalid Location');
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        db.collection('department').insertOne(query, (err, result) => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true, id: result.insertedId})
+        })
+    });
+
+    app.post('/delDept', (req, res) => {
+        let query = {}
+        const { id } = req.query;
+        let errMsg = []
+        
+        if (!isEmptyString(id)) 
+            query._id = new ObjectID(id)
+        else 
+            errMsg.push('Invalid Department');
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        db.collection('department').deleteOne(query, err => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true});
+        })
+    });
+
+    app.post('/updateDept', (req, res) => {
+        let selQuery = {}
+        let updateQuery = {}
+        const { id, deptName, location } = req.query;
+        let errMsg = []
+        
+        if (!isEmptyString(id)) 
+            selQuery._id = new ObjectID(id)
+        else 
+            errMsg.push('Update failed due to invalid ID');
+        
+        if (!isEmptyString(deptName)) 
+            updateQuery.deptName = deptName
+
+        if (!isEmptyString(location)) 
+            updateQuery.location = location
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        db.collection('department').updateOne(selQuery, {$set:updateQuery}, err => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true});
+        })
+    });
+
+    app.post('/addCourse', (req, res) => {
+        let query = {}
+        const { title, level, deptId, year, classSize } = req.query;
+        let errMsg = []
+
+        if (!isEmptyString(title)) 
+            query.title = title
+        else 
+            errMsg.push('Invalid Course Ttile');
+
+        if (!isEmptyString(level))
+            query.level = level
+        else 
+            errMsg.push('Invalid Level');
+
+        if (!isEmptyString(year))
+            query.year = year
+        else 
+            errMsg.push('Invalid year');
+
+        if (!isEmptyString(classSize))
+            query.classSize = classSize
+        else 
+            errMsg.push('Invalid Class Size');
+
+        if (!isEmptyObj(deptId))
+            query.deptId = deptId;
+        else 
+            errMsg.push('Invalid Department');
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        query.enrolled = [];
+
+        db.collection('course').insertOne(query, (err, result) => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true, id: result.insertedId})
+        })
+    });
+
+    app.post('/delCourse', (req, res) => {
+        let query = {}
+        const { id } = req.query;
+        let errMsg = []
+        
+        if (!isEmptyString(id)) 
+            query._id = new ObjectID(id)
+        else 
+            errMsg.push('Invalid Course');
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        db.collection('course').deleteOne(query, err => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true});
+        })
+    });
+
+    
+    app.post('/updateCourse', (req, res) => {
+        let selQuery = {}
+        let updateQuery = {}
+        const { id, title, level, deptId, year, classSize } = req.query;
+        let errMsg = []
+        
+        if (!isEmptyString(id)) 
+            selQuery._id = new ObjectID(id)
+        else 
+            errMsg.push('Update failed due to invalid ID');
+        
+        if (!isEmptyString(title)) 
+            updateQuery.title = title
+
+        if (!isEmptyString(level)) 
+            updateQuery.level = level
+        
+        if (!isEmptyString(year)) 
+            updateQuery.year = year
+        
+        if (!isEmptyString(deptId)) 
+            updateQuery.deptId = deptId
+
+        if (!isEmptyString(classSize)) 
+            updateQuery.classSize = classSize
+
+        if (!isEmptyObj(errMsg))
+            return handleErrorRes(res, errMsg)
+
+        db.collection('course').updateOne(selQuery, {$set:updateQuery}, err => {
+            if (err) {
+                return handleErrorRes(res, [err])
+            }
+            res.json({status: true});
         })
     });
    
