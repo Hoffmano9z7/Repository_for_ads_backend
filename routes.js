@@ -493,11 +493,17 @@ module.exports = function(app, db) {
 
         query.enrolled = [];
 
-        db.collection('course').insertOne(query, (err, result) => {
+        db.collection('course').insertOne(query, (err, course) => {
             if (err) {
                 return handleErrorRes(res, [err])
             }
-            res.json({status: true, id: result.insertedId})
+            db.collection('department').find({_id: {$in: deptId.map( d => new ObjectID(d))}}).toArray( (err, department) => {
+                if (err) {
+                    return handleErrorRes(res, [err])
+                }
+                console.log(department)
+                res.json({status: true, id: course.insertedId, deptNames: department.map( d => d.deptName)})
+            })
         })
     });
 
@@ -518,7 +524,9 @@ module.exports = function(app, db) {
             if (err) {
                 return handleErrorRes(res, [err])
             }
-            res.json({status: true});
+            res.json({
+                status: true,
+            });
         })
     });
 
@@ -556,7 +564,13 @@ module.exports = function(app, db) {
             if (err) {
                 return handleErrorRes(res, [err])
             }
-            res.json({status: true});
+            db.collection('department').find({_id: {$in: deptId.map( d => new ObjectID(d))}}).toArray( (err, department) => {
+                if (err) {
+                    return handleErrorRes(res, [err])
+                }
+                console.log(department)
+                res.json({status: true, deptNames: department.map( d => d.deptName)})
+            })
         })
     });
    
