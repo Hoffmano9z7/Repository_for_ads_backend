@@ -213,7 +213,7 @@ module.exports = function(app, db) {
                             })
                             res.json({
                                 status: true,
-                                result: course,
+                                result: result,
                             });
                         })
                     });
@@ -282,7 +282,7 @@ module.exports = function(app, db) {
                             })
                             res.json({
                                 status: true,
-                                result: course,
+                                result: result,
                             });
                         })
                     });
