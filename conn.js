@@ -1,5 +1,5 @@
 const MongoClient = require('mongodb').MongoClient;
-const PROD_URI = "mongodb+srv://webapp:zxcvbnm123456@adsassignment-qmne0.gcp.mongodb.net/test?retryWrites=true&w=majority";
+const PROD_URI = "<:connection string>";
 
 function connect(uri) {
 
@@ -13,7 +13,3 @@ module.exports = async function() {
 
     return await connect(PROD_URI);
 }
-
-
-
-
