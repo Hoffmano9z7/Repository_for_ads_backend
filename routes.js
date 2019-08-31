@@ -501,7 +501,7 @@ module.exports = function(app, db) {
             errMsg.push('Invalid Level');
 
         if (!isEmptyString(year))
-            query.year = year
+            query.year = Number(year)
         else 
             errMsg.push('Invalid year');
 
@@ -576,7 +576,7 @@ module.exports = function(app, db) {
             updateQuery.level = level
         
         if (!isEmptyString(year)) 
-            updateQuery.year = year
+            updateQuery.year = Number(year)
         
         if (!isEmptyString(deptId)) 
             updateQuery.deptId = deptId
